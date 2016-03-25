@@ -1,6 +1,8 @@
 <?php
 namespace Quick\Core;
-//error: 1
+
+defined('ERROR_CACHE_CONNECT_FAIL') || define('ERROR_CACHE_CONNECT_FAIL', 1100);
+defined('ERROR_CACHE_CONFIG_ERROR') || define('ERROR_CACHE_CONFIG_ERROR', 3001);
 
 class Cache
 {
@@ -50,9 +52,14 @@ class Cache
             }
         }
 
+        $data = NULL;
+        
         if (!self::exist($key, $name, $data) && is_callable($func)) {
             $data = call_user_func($func);
-            self::set($key, $data, $name);
+            
+            if (FALSE !== $data) {
+                self::set($key, $data, $name);
+            }
         }
 
         return $data;
@@ -122,12 +129,13 @@ class Cache
         if (!App::instance()->get('cache_enable')) 
             return NULL;
         $cache_config = Config::get('cache');
-        $shared = isset($cache_config['shared']) ? $cache_config['shared'] : array();
-        $nodes = isset($cache_config['nodes']) ? $cache_config['nodes'] : array();
+        $shared = isset($cache_config['shared']) ? $cache_config['shared'] : [];
+        $nodes = isset($cache_config['nodes']) ? $cache_config['nodes'] : [];
+        $rules = isset($shared[$name]) ? $shared[$name] : [];
         unset($cache_config); // 减少内存使用
 
         // 如果进行了分片处理, 只有有key才能进行分片
-        if (isset($shared[$name]) && !is_null($key)) {
+        if (!empty($rules) && !is_null($key)) {
             $rules = $shared[$name];
 
             if (is_numeric($key)) {
@@ -143,7 +151,7 @@ class Cache
             $idx = Binarychop::find($indexs, $i);
 
             if (FALSE === $idx) {
-                throw new \Exception(sprintf("The index %d not found in shared configurate %s rules", $i, $name), 1);
+                throw new \Exception(sprintf("The index %d not found in shared configurate %s rules", $i, $name), ERROR_CACHE_CONFIG_ERROR);
             }
 
             $name = $rules[$idx];
@@ -174,7 +182,7 @@ class Cache
                     if ($client->connect($host, $port, 2)){
                         self::$conns[$name] = $client;
                     } else {
-                        throw new \Exception(sprintf('Redis(%s:%s) server has go away', $host, $port), 1);
+                        throw new \Exception(sprintf('Redis(%s:%s) server has go away', $host, $port), ERROR_CACHE_CONNECT_FAIL);
                     }
                     break;
                 case 'memcache':
@@ -185,7 +193,7 @@ class Cache
                     if ($client = @memcache_connect($host,$port)) {
                         self::$conns[$name] = $client;
                     } else {
-                        throw new \Exception(sprintf('Memcache(%s:%s) server has go away', $host, $port), 1);
+                        throw new \Exception(sprintf('Memcache(%s:%s) server has go away', $host, $port), ERROR_CACHE_CONNECT_FAIL);
                     }
                     break;
                 default:

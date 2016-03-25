@@ -7,6 +7,11 @@ defined('APP_PATH') || define('APP_PATH', dirname(LIB_PATH) . DIRECTORY_SEPARATO
 defined('CONF_PATH') || define('CONF_PATH', APP_PATH . DIRECTORY_SEPARATOR . 'conf');
 defined('DS') || define('DS', DIRECTORY_SEPARATOR);
 
+// 错误码相关
+defined('ERROR_SYSTEM_CORE_MAX') || define('ERROR_SYSTEM_CORE_MAX', 1000);
+defined('EXCEPTION_SYSTEM_CORE') || define('EXCEPTION_SYSTEM_CORE', 400);
+defined('ERROR_SYSTEM_CORE') || define('ERROR_SYSTEM_CORE', 500);
+
 class Server {
     public static function run($func = NULL) {
         if (!defined('APP_RUN')) {
@@ -72,6 +77,10 @@ class Server {
     }
 
     public static function error($code, $message, $errorFile, $errorLine, $trace) {
+        if ($code < ERROR_SYSTEM_CORE_MAX) {
+            $code = ERROR_SYSTEM_CORE;
+        }
+
         Core\Logger::error("System", sprintf('error_file: %s; error_line: %s; code: %s ; msg: %s', $errorFile, $errorLine, $code, $message));
         require_once(__DIR__ . DS . 'view'. DS .'error.php');
         exit;
@@ -94,6 +103,11 @@ class Server {
         $errorFile = $exceptionObject->getFile();
         $errorLine = $exceptionObject->getLine();
         $trace = $exceptionObject->getTrace();
+
+        if ($code < ERROR_SYSTEM_CORE_MAX) {
+            $code = EXCEPTION_SYSTEM_CORE;
+        }
+
         Core\Logger::error("System", sprintf('code: %s   msg: %s', $code, $message));
         require_once(__DIR__ . DS . 'view'. DS .'error.php');
         exit;
@@ -117,8 +131,7 @@ class Server {
         }
 
         if (($error = error_get_last()) && in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR,E_COMPILE_ERROR))) {
-            throw new \Exception(sprintf('Fatal error: %s', $error['message']), 2);
+            throw new \Exception(sprintf('Fatal error: %s', $error['message']), ERROR_SYSTEM_CORE);
         }
     }
 }
-

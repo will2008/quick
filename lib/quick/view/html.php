@@ -4,6 +4,8 @@ namespace Quick\View;
 class Html extends Factory
 {    
     public function render($tpl = NULL) {
+        if ($this->isRender) return TRUE;
+
         header('Content-Type: text/html; charset=' . \Quick\Core\App::instance()->get('charset'));
         extract($this->data);
         if (is_null($tpl)) {
@@ -20,6 +22,7 @@ class Html extends Factory
                     'views', 
                     $tpl.'.php')));
         }
+        $this->isRender = TRUE;
     }
 
 }

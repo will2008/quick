@@ -50,6 +50,10 @@ final class Logger {
             $level_num = constant($className . '::' . strtoupper($level));
 
             if ($level_num <= static::getLogerLevel()) {
+                if (is_array($msg) || is_object($msg)) {
+                    $msg = print_r($msg, TRUE);
+                }
+                
                 self::$fileName = sprintf("%s_%s_%s.log", self::$fileNamePrefix, $level, date('Ymd'));
                 // $msg = sprintf('[%s] %s: [%s] %s', date('Y-m-d H:i:s'), strtoupper($level), $name, print_r($msg, true));
                 $msg = sprintf('[%s] %s: [%s] %s', date('Y-m-d H:i:s'), strtoupper($level), $name, $msg);

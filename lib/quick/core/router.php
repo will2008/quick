@@ -1,6 +1,8 @@
 <?php
 namespace Quick\Core;
 
+defined('ERROR_ROUTER_NOT_FOUND') || define('ERROR_ROUTER_NOT_FOUND', 1400);
+
 final class Router
 {
     private static $map = array();
@@ -46,17 +48,25 @@ final class Router
         $controllerObject =  new $className();
 
         if (!method_exists($controllerObject, self::$action)) {
-            throw new \Exception(sprintf("Controller %s lost method of %s!", self::$controller, self::$action), 500);
+            throw new \Exception(sprintf("Controller %s lost method of %s!", self::$controller, self::$action), ERROR_ROUTER_NOT_FOUND);
         }
 
+        $runAction = TRUE;
+        
         if (method_exists($controllerObject, 'before')) {
-            $controllerObject->before();
+            $runAction = $controllerObject->before();
         }
 
-        call_user_func_array(array($controllerObject, self::$action), self::getParams());
+        if ($runAction) {
+            call_user_func_array(array($controllerObject, self::$action), self::getParams());
+            
+            if (method_exists($controllerObject, 'after')) {
+                $controllerObject->after();
+            }
+        }        
 
-        if (method_exists($controllerObject, 'after')) {
-            $controllerObject->after();
+        if ($controllerObject->autoRender) {
+            $controllerObject->view->render();
         }
     }
 

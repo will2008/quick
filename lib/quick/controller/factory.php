@@ -3,7 +3,7 @@ namespace Quick\Controller;
 
 abstract class Factory
 {
-    protected $view = NULL;
+    public $view = NULL;
     protected $method = 'GET';
     protected $_body = array();
     protected $_query = array();
@@ -14,6 +14,7 @@ abstract class Factory
     protected $_session = array();
     protected $trustProxy = FALSE;
     private static $_models = array();
+    public $autoRender = TRUE;
 
     protected static $_detectors = [
         'get' => ['env' => 'REQUEST_METHOD', 'value' => 'GET'],
@@ -33,8 +34,6 @@ abstract class Factory
     protected static $_detectorCache = array();
 
     public function __construct() {
-        $this->initView();
-        $this->init();
         $this->_query = $_GET;
         $this->_body = $_POST;
         $this->_files = $_FILES;
@@ -42,6 +41,8 @@ abstract class Factory
         $this->_env = $_SERVER;
         $this->_cookie = $_COOKIE;
         $this->_session = $_SESSION;
+        $this->initView();
+        $this->init();
     }
 
     protected function init() {}
@@ -166,7 +167,7 @@ abstract class Factory
             return self::$_models[$name];
         }
 
-        $class = 'Models\\' . $name;
+        $class = '\\Models\\' . $name;
         $ref = new \Reflectionclass($class);
         $args = array_slice(func_get_args(), 1);
         self::$_models[$name] = $args ? $ref->newinstanceargs($args) : new $class();
